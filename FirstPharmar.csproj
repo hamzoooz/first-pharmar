@@ -13,7 +13,17 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.*" />
     <PackageReference Include="Lucide.Blazor" Version="0.*" />
-    <PackageReference Include="MudBlazor" Version="9.4.0" />
   </ItemGroup>
+
+  <!-- Path B: React Integration -->
+  <Target Name="BuildReact" BeforeTargets="Build">
+    <Message Importance="High" Text="Building React Frontend (Path B)..." />
+    <Exec Command="npm install" Condition="!Exists('node_modules')" />
+    <Exec Command="npm run build" />
+    <ItemGroup>
+      <DistFiles Include="dist\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DistFiles)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

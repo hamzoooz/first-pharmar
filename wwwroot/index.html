@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FastPharma</title>
     <base href="/" />
+    <link href="assets/index.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="FirstPharmar.styles.css" rel="stylesheet" />
 </head>
@@ -13,7 +14,7 @@
         <div class="flex items-center justify-center h-screen">
             <div class="text-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                <p class="mt-4 text-slate-600 font-medium">Launching System...</p>
+                <p class="mt-4 text-slate-600 font-medium">Launching Core System...</p>
             </div>
         </div>
     </div>
@@ -25,6 +26,7 @@
     </div>
 
     <script src="_framework/blazor.webview.js"></script>
+    <script type="module" src="assets/index.js"></script>
     <script>
         window.addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 'n') {

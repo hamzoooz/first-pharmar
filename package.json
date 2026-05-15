@@ -5,18 +5,31 @@
   "main": "src/main.tsx",
   "type": "module",
   "scripts": {
-    "dev": "tsx web-preview-server.ts",
-    "build:css": "tailwindcss -i wwwroot/css/app.css -o wwwroot/css/app.css",
-    "watch:css": "tailwindcss -i wwwroot/css/app.css -o wwwroot/css/app.css --watch",
-    "start": "node web-preview-server.ts"
+    "dev": "vite",
+    "build": "vite build",
+    "start": "tsx web-preview-server.ts",
+    "preview": "vite preview"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "express": "^5.2.1",
+    "lucide-react": "^0.546.0",
+    "framer-motion": "^11.0.0",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.0.1",
     "tsx": "^4.22.0"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.0.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
     "tailwindcss": "4.1.14",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
   }
 }
