@@ -1,5 +1,25 @@
 @page "/settings"
 @using Lucide.Blazor
+@using FirstPharmar.Services
+@inject IBackupService BackupService
+
+@code {
+    private BackupStatus _backupStatus;
+    private bool _isBackingUp = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _backupStatus = await BackupService.GetStatusAsync();
+    }
+
+    private async Task HandleBackup()
+    {
+        _isBackingUp = true;
+        await BackupService.StartBackupAsync();
+        _backupStatus = await BackupService.GetStatusAsync();
+        _isBackingUp = false;
+    }
+}
 
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
     <div>
@@ -72,10 +92,30 @@
                 </h3>
                 <div class="bg-muted/30 p-6 rounded-xl border border-border flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-bold text-foreground">Auto-Backup Frequency</p>
-                        <p class="text-[10px] text-muted-foreground uppercase tracking-widest">System takes snapshot every 24 hours</p>
+                        <p class="text-sm font-bold text-foreground">Cloud Sync (Google Drive)</p>
+                        @if (_backupStatus != null)
+                        {
+                            <p class="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                                Status: <span class='@(_backupStatus.Connected ? "text-success" : "text-warning") font-black'>@_backupStatus.LastStatus</span>
+                                @if (_backupStatus.LastBackup.HasValue)
+                                {
+                                    <span class="mx-2">|</span> <span>Last: @_backupStatus.LastBackup.Value.ToString("dd MMM, HH:mm")</span>
+                                }
+                            </p>
+                        }
                     </div>
-                    <button class="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Backup Now</button>
+                    <button @onclick="HandleBackup" disabled="@_isBackingUp" class="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2">
+                        @if (_isBackingUp)
+                        {
+                            <Icon Name="loader-2" Width="14" Height="14" class="animate-spin" />
+                            <span>Processing...</span>
+                        }
+                        else
+                        {
+                            <Icon Name="cloud-upload" Width="14" Height="14" />
+                            <span>Backup Now</span>
+                        }
+                    </button>
                 </div>
             </section>
 

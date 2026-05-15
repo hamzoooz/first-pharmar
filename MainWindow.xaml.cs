@@ -16,6 +16,7 @@ public partial class MainWindow : Window
         
         serviceCollection.AddDbContext<PharmacyDbContext>();
         serviceCollection.AddScoped<IPharmacyService, PharmacyService>();
+        serviceCollection.AddSingleton<IBackupService, BackupService>();
         serviceCollection.AddSingleton<ShortcutService>();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         Resources.Add("services", serviceProvider);
