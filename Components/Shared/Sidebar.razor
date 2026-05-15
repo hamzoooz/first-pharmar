@@ -1,0 +1,122 @@
+@using Lucide.Blazor
+
+<aside class="w-64 shrink-0 gradient-primary text-white flex flex-col h-full shadow-2xl z-30 transition-all duration-300">
+    <div class="p-6 border-b border-white/10 flex flex-col items-start gap-1">
+        <div class="flex items-center gap-2">
+            <div class="bg-white/20 p-2 rounded-lg backdrop-blur-md">
+                <Icon Name="layout-dashboard" Width="22" Height="22" Stroke="white" />
+            </div>
+            <span class="text-xl font-bold tracking-tight">FastPharma</span>
+        </div>
+        <span class="text-[10px] uppercase tracking-widest opacity-50 font-bold mt-1">Management System</span>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-0.5 mt-4 overflow-y-auto custom-scrollbar">
+        <button @onclick='() => OnNavChange.InvokeAsync("Dashboard")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Dashboard" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="layout-dashboard" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Dashboard" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Dashboard</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("POS")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "POS" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="shopping-cart" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "POS" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>POS / Sales</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Inventory")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Inventory" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="package" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Inventory" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Inventory</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("StockPurchase")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "StockPurchase" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="package-plus" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "StockPurchase" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Stock Purchase</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Batches")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Batches" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="layers" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Batches" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Batch Tracking</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Orders")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Orders" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="shopping-bag" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Orders" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Orders</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Sales")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Sales" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="history" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Sales" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Sales History</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Reports")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Reports" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="file-text" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Reports" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Sales Report</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Accounting")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Accounting" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="book-open" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Accounting" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Accounting</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Credits")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Credits" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="credit-card" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Credits" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Customer Credits</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Prescriptions")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Prescriptions" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="pill" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Prescriptions" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Prescriptions</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Suppliers")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Suppliers" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="truck" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Suppliers" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Suppliers</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Wholesale")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Wholesale" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="shopping-bag" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Wholesale" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Wholesale Portal</span>
+        </button>
+
+        <button @onclick='() => OnNavChange.InvokeAsync("Settings")' 
+                class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 group @(ActivePage == "Settings" ? "bg-white/15 text-white shadow-sm" : "text-white/60 hover:text-white hover:bg-white/10")'>
+            <Icon Name="settings" Width="16" Height="16" StrokeWidth="2" class='@($"shrink-0 {(ActivePage == "Settings" ? "text-white" : "text-white/40 group-hover:text-white/80")}")' />
+            <span>Settings</span>
+        </button>
+
+    </nav>
+
+    <div class="p-4 border-t border-white/10 space-y-4">
+        <div class="bg-white/10 rounded-xl p-3 flex items-center gap-3 backdrop-blur-sm">
+            <div class="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center border border-white/10">
+                <Icon Name="user" Width="18" Height="18" class="text-white" />
+            </div>
+            <div class="overflow-hidden">
+                <p class="text-xs font-bold truncate">Admin User</p>
+                <p class="text-[10px] text-white/50 truncate uppercase tracking-tighter">Chief Pharmacist</p>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <p class="text-[9px] text-white/30 uppercase tracking-[0.2em] font-bold">Powered By</p>
+            <p class="text-[10px] text-white/60 font-semibold">TennaHub Technologies</p>
+        </div>
+    </div>
+</aside>
+
+@code {
+    [Parameter] public string ActivePage { get; set; } = "Dashboard";
+    [Parameter] public EventCallback<string> OnNavChange { get; set; }
+}

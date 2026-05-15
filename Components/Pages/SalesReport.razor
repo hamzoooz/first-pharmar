@@ -1,0 +1,139 @@
+@page "/sales-report"
+@using FirstPharmar.Services
+@using FirstPharmar.Models
+@using Lucide.Blazor
+@inject IPharmacyService PharmacyService
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div>
+        <h2 class="text-2xl font-bold text-foreground tracking-tight">Sales Analytics</h2>
+        <p class="text-[11px] text-muted-foreground uppercase tracking-widest font-bold">Performance / Revenue Streams / Unit Velocity</p>
+    </div>
+    <div class="flex gap-3">
+        <select class="bg-card border border-border rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none text-foreground">
+            <option>Period: Last 30 Days</option>
+            <option>Period: Last Quarter</option>
+            <option>Period: Annual Review</option>
+        </select>
+        <button class="btn-primary flex items-center gap-2 px-6 py-3 uppercase tracking-widest text-[10px]">
+            <Icon Name="download" Width="16" Height="16" /> Generate PDF
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- Charts/Metrics -->
+    <div class="lg:col-span-8 space-y-8">
+        <div class="bg-card border border-border rounded-xl p-8 shadow-sm">
+            <h3 class="text-xs font-black uppercase tracking-widest text-primary mb-8 flex items-center gap-2">
+                <Icon Name="bar-chart-3" Width="16" Height="16" /> Revenue Distribution
+            </h3>
+            <div class="h-64 flex items-end justify-between gap-2">
+                @for (int i = 0; i < 12; i++)
+                {
+                    var height = new Random().Next(20, 100);
+                    <div class="flex-1 flex flex-col items-center gap-3 group">
+                        <div class="w-full bg-primary/20 rounded-t-lg group-hover:bg-primary transition-all relative" style="height: @(height)%">
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                UGX @(height * 100)k
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Day @(i + 1)</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+                <h4 class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Top Performing Categories</h4>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Antibiotics</span>
+                        <div class="flex items-center gap-3">
+                            <div class="h-2 w-24 bg-muted rounded-full overflow-hidden">
+                                <div class="h-full bg-primary" style="width: 85%"></div>
+                            </div>
+                            <span class="text-[10px] font-black">85%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Pain Relief</span>
+                        <div class="flex items-center gap-3">
+                            <div class="h-2 w-24 bg-muted rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-500" style="width: 62%"></div>
+                            </div>
+                            <span class="text-[10px] font-black">62%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Supplements</span>
+                        <div class="flex items-center gap-3">
+                            <div class="h-2 w-24 bg-muted rounded-full overflow-hidden">
+                                <div class="h-full bg-purple-500" style="width: 45%"></div>
+                            </div>
+                            <span class="text-[10px] font-black">45%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+                <h4 class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Payment Method Split</h4>
+                <div class="flex items-center justify-center h-32 gap-8">
+                     <div class="flex flex-col items-center gap-1">
+                        <div class="h-16 w-16 rounded-full border-[6px] border-primary flex items-center justify-center">
+                            <span class="text-[10px] font-black">72%</span>
+                        </div>
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash</span>
+                     </div>
+                     <div class="flex flex-col items-center gap-1">
+                        <div class="h-16 w-16 rounded-full border-[6px] border-blue-500 flex items-center justify-center">
+                            <span class="text-[10px] font-black">18%</span>
+                        </div>
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Mobile</span>
+                     </div>
+                     <div class="flex flex-col items-center gap-1">
+                        <div class="h-16 w-16 rounded-full border-[6px] border-destructive flex items-center justify-center">
+                            <span class="text-[10px] font-black">10%</span>
+                        </div>
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Credit</span>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: High Velocity Items -->
+    <div class="lg:col-span-4 bg-card border border-border rounded-xl shadow-sm p-6 overflow-hidden">
+        <h3 class="text-xs font-black uppercase tracking-widest text-primary mb-8 flex items-center gap-2">
+            <Icon Name="trending-up" Width="16" Height="16" /> Velocity Items
+        </h3>
+        <div class="space-y-6">
+            @foreach (var p in _products.Take(6))
+            {
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-3">
+                        <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Icon Name="package" Width="18" Height="18" class="text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-foreground truncate w-32">@p.Name</p>
+                            <p class="text-[9px] text-muted-foreground uppercase font-medium">Avg @(new Random().Next(5, 50)) Units/Day</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-black text-success">+@(new Random().Next(2, 20))%</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Product> _products = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await PharmacyService.GetProductsAsync();
+    }
+}

@@ -1,0 +1,125 @@
+@using Microsoft.AspNetCore.Components.Web
+@using FirstPharmar.Components.Shared
+@using FirstPharmar.Components.Pages
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <Sidebar OnNavChange="HandleNavChange" ActivePage="@_currentPage" />
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-background relative flex flex-col">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border px-8 py-4 flex justify-between items-center shrink-0">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-foreground">@_currentPage</h1>
+                <p class="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">System / Admin / @_currentPage</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2">
+                    <div class="h-2 w-2 rounded-full bg-success animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Online</span>
+                </div>
+                <div class="flex items-center gap-3 border-l border-border pl-6">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs font-bold">Admin User</p>
+                        <p class="text-[10px] text-muted-foreground">@DateTime.Now.ToString("dddd, MMM dd")</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
+                        AD
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-8 flex-1">
+            <ErrorBoundary>
+                <ChildContent>
+                    @if (_currentPage == "Dashboard")
+                    {
+                        <Dashboard />
+                    }
+                    else if (_currentPage == "Inventory")
+                    {
+                        <Inventory />
+                    }
+                    else if (_currentPage == "POS")
+                    {
+                        <POS />
+                    }
+                    else if (_currentPage == "Sales")
+                    {
+                        <SalesHistory />
+                    }
+                    else if (_currentPage == "Suppliers")
+                    {
+                        <Suppliers />
+                    }
+                    else if (_currentPage == "Prescriptions")
+                    {
+                        <Prescriptions />
+                    }
+                    else if (_currentPage == "Wholesale")
+                    {
+                        <Wholesale />
+                    }
+                    else if (_currentPage == "Accounting")
+                    {
+                        <Accounting />
+                    }
+                    else if (_currentPage == "Credits")
+                    {
+                        <CustomerCredits />
+                    }
+                    else if (_currentPage == "Batches")
+                    {
+                        <Batches />
+                    }
+                    else if (_currentPage == "StockPurchase")
+                    {
+                        <StockPurchase />
+                    }
+                    else if (_currentPage == "Orders")
+                    {
+                        <Orders />
+                    }
+                    else if (_currentPage == "Reports")
+                    {
+                        <SalesReport />
+                    }
+                    else if (_currentPage == "Settings")
+                    {
+                        <Settings />
+                    }
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="bg-red-50 p-6 rounded-2xl border border-red-200">
+                        <h3 class="text-red-800 font-bold mb-2">Something went wrong</h3>
+                        <p class="text-red-600 text-sm">@ex.Message</p>
+                        @if (ex.InnerException != null)
+                        {
+                            <p class="text-red-500 text-[10px] mt-1">@ex.InnerException.Message</p>
+                        }
+                        <button @onclick='() => _currentPage = "Dashboard"' class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Return to Dashboard</button>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
+        </div>
+    </main>
+</div>
+
+@code {
+    private string _currentPage = "Dashboard";
+
+    private void HandleNavChange(string page)
+    {
+        try 
+        {
+            _currentPage = page;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Navigation error: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,146 @@
+@using FirstPharmar.Services
+@using FirstPharmar.Models
+@using Lucide.Blazor
+@inject IPharmacyService PharmacyService
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div>
+        <h2 class="text-2xl font-bold text-foreground tracking-tight">Wholesale & Distribution</h2>
+        <p class="text-[11px] text-muted-foreground uppercase tracking-widest font-bold">B2B Portal / High-Volume Procurement</p>
+    </div>
+    <div class="flex gap-4">
+        <div class="bg-primary/10 border border-primary/20 flex items-center px-4 py-2 rounded-lg gap-2 text-primary font-black text-[10px] uppercase tracking-widest shadow-sm">
+            <Icon Name="trending-up" Width="16" Height="16" />
+            <span>Enterprise Mode</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-12rem)]">
+    <!-- Product Selection (Bulk) -->
+    <div class="lg:col-span-8 flex flex-col gap-6 h-full min-h-0">
+        <div class="bg-card border border-border rounded-xl p-3 shadow-sm shrink-0">
+            <div class="relative group">
+                <Icon Name="search" Width="18" Height="18" class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input type="text" placeholder="Search master catalog for bulk fulfillment..." class="w-full pl-12 pr-4 py-3 bg-muted/30 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar pr-2">
+            @foreach (var product in _products)
+            {
+                <div class="bg-card border border-border rounded-xl p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Icon Name="package" Width="48" Height="48" />
+                    </div>
+                    <div class="flex justify-between items-start mb-3 relative z-10">
+                        <div>
+                            <h4 class="font-bold text-foreground text-sm leading-tight">@product.Name</h4>
+                            <span class="text-[9px] font-bold text-primary uppercase tracking-widest opacity-70">@product.Category?.Name</span>
+                        </div>
+                        <div class="bg-success/10 text-success text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter">In Stock</div>
+                    </div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div>
+                            <p class="text-[10px] text-muted-foreground font-medium uppercase">Unit MSRP: UGX @product.SalePrice.ToString("N0")</p>
+                            <p class="text-sm font-black text-primary mt-0.5">Bulk Price: UGX @((product.SalePrice * 0.85m).ToString("N0"))</p>
+                            <p class="text-[9px] text-muted-foreground/50 mt-1 uppercase tracking-tighter">Available: @product.StockQuantity Units</p>
+                        </div>
+                        <button @onclick="() => AddToCart(product)" class="bg-primary text-white p-2.5 rounded-lg opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-lg shadow-primary/20">
+                            <Icon Name="plus" Width="18" Height="18" />
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Wholesale Cart -->
+    <div class="lg:col-span-4 h-full min-h-0">
+        <div class="bg-card border border-border rounded-xl shadow-xl flex flex-col h-full overflow-hidden">
+            <div class="p-5 border-b border-border flex items-center gap-3 bg-muted/20 shrink-0">
+                <Icon Name="truck" Width="20" Height="20" class="text-primary" />
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-foreground">Manifest Summary</h3>
+                    <p class="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Bulk Logistics Queue</p>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+                @if (!_cart.Any())
+                {
+                    <div class="h-full flex flex-col items-center justify-center text-muted-foreground/30 text-center gap-4">
+                        <Icon Name="package" Width="64" Height="64" />
+                        <p class="text-[10px] font-black uppercase tracking-widest">Queue is currently empty</p>
+                    </div>
+                }
+                @foreach (var item in _cart)
+                {
+                    <div class="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded-xl animate-fade-in group">
+                        <div class="flex-1 min-w-0">
+                            <h5 class="font-bold text-[11px] text-foreground truncate">@item.Product?.Name</h5>
+                            <p class="text-[9px] text-muted-foreground font-bold uppercase">QTY: @item.Quantity × @item.UnitPrice.ToString("N0")</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" @bind="item.Quantity" class="w-14 bg-background border border-border rounded p-1 text-[10px] font-bold text-center focus:border-primary outline-none" />
+                            <button @onclick="() => RemoveFromCart(item)" class="text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Icon Name="x-circle" Width="16" Height="16" />
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="p-6 bg-muted/20 border-t border-border shrink-0">
+                <div class="space-y-2 mb-6">
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span>List Subtotal</span>
+                        <span class="text-foreground">UGX @_cart.Sum(i => i.Subtotal).ToString("N0")</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-success">
+                        <span>B2B Incentive (15%)</span>
+                        <span>-UGX @(_cart.Sum(i => i.Subtotal) * 0.15m).ToString("N0")</span>
+                    </div>
+                    <div class="flex justify-between items-end pt-3 border-t border-border/50">
+                        <span class="text-xs font-black uppercase tracking-[0.2em] text-foreground">Payable</span>
+                        <span class="text-2xl font-black text-primary">UGX @(_cart.Sum(i => i.Subtotal) * 0.85m).ToString("N0")</span>
+                    </div>
+                </div>
+                <button class="w-full gradient-primary hover:opacity-90 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all active:scale-95">
+                    EXECUTE BULK DISPATCH
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Product> _products = new();
+    private List<SaleItem> _cart = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await PharmacyService.GetProductsAsync();
+    }
+
+    private void AddToCart(Product p)
+    {
+        var existing = _cart.FirstOrDefault(i => i.ProductId == p.Id);
+        if (existing != null)
+        {
+            existing.Quantity += 10; // Bulk default
+        }
+        else
+        {
+            _cart.Add(new SaleItem 
+            { 
+                ProductId = p.Id, 
+                Product = p, 
+                Quantity = 10, 
+                UnitPrice = p.SalePrice * 0.85m // Wholesale price
+            });
+        }
+    }
+
+    private void RemoveFromCart(SaleItem item) => _cart.Remove(item);
+}

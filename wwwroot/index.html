@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FastPharma</title>
+    <base href="/" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="FirstPharmar.styles.css" rel="stylesheet" />
+</head>
+<body class="bg-slate-50">
+    <div id="app">
+        <div class="flex items-center justify-center h-screen">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                <p class="mt-4 text-slate-600 font-medium">Launching System...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webview.js"></script>
+    <script>
+        window.addEventListener('keydown', (e) => {
+            if (e.altKey && e.key === 'n') {
+                DotNet.invokeMethodAsync('FirstPharmar', 'OnGlobalShortcut', 'new');
+            }
+            if (e.altKey && e.key === 's') {
+                DotNet.invokeMethodAsync('FirstPharmar', 'OnGlobalShortcut', 'save');
+            }
+        });
+    </script>
+</body>
+</html>

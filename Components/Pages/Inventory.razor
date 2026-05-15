@@ -1,0 +1,519 @@
+@page "/inventory"
+@using FirstPharmar.Services
+@using FirstPharmar.Models
+@using Lucide.Blazor
+@using System.Text.Json
+@inject IPharmacyService PharmacyService
+@inject ShortcutService ShortcutService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="flex flex-col gap-6 pb-8 animate-fade-in px-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-foreground">Inventory</h2>
+            <p class="text-xs text-muted-foreground">Manage your pharmacy products and stock levels</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button class="bg-card border border-border rounded-lg px-4 py-2 flex items-center gap-2 text-xs font-medium hover:bg-muted/50 transition-colors">
+                <Icon Name="download" Width="14" Height="14" /> Export CSV
+            </button>
+            <button @onclick="ShowAddModal" class="bg-primary text-primary-foreground rounded-lg px-4 py-2 flex items-center gap-2 text-xs font-bold hover:opacity-90 transition-opacity">
+                <Icon Name="plus" Width="14" Height="14" /> Add Product
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-card border border-border rounded-xl p-4 shadow-sm group transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Products</span>
+                <div class="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Icon Name="package" Width="16" Height="16" />
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-foreground">@_stats.TotalProducts</h3>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 shadow-sm group transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Low Stock</span>
+                <div class="h-8 w-8 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
+                    <Icon Name="alert-triangle" Width="16" Height="16" />
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-foreground">@_stats.LowStockCount</h3>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 shadow-sm group transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Out of Stock</span>
+                <div class="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive">
+                    <Icon Name="alert-triangle" Width="16" Height="16" />
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-foreground">@_stats.OutOfStockCount</h3>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 shadow-sm group transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Expiring Soon</span>
+                <div class="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                    <Icon Name="clock" Width="16" Height="16" />
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-foreground">@_stats.ExpiringSoonCount</h3>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-col md:flex-row gap-4">
+        <div class="relative flex-1 group">
+            <Icon Name="search" Width="16" Height="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input type="text" placeholder="Search products..." @bind="_searchTerm" @bind:event="oninput"
+                   class="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+        </div>
+        <select @bind="_selectedCategoryId" class="bg-card border border-border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 min-w-[200px] cursor-pointer">
+            <option value="0">All Categories</option>
+            @foreach (var cat in _categories)
+            {
+                <option value="@cat.Id">@cat.Name</option>
+            }
+        </select>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        @foreach (var product in FilteredProducts)
+        {
+            <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group duration-200">
+                <div class="aspect-square bg-muted/20 flex items-center justify-center relative p-8">
+                    @if (string.IsNullOrEmpty(product.ImagePath))
+                    {
+                        <Icon Name="package" Width="48" Height="48" class="text-muted-foreground/20" />
+                    }
+                    else
+                    {
+                        <img src="@product.ImagePath" class="w-full h-full object-contain" />
+                    }
+                    <div class="absolute top-4 left-4">
+                        @ExpiryBadge(product.ExpiryDate)
+                    </div>
+                </div>
+                
+                <div class="p-5">
+                    <div class="mb-4">
+                        <h4 class="font-bold text-foreground text-sm truncate">@product.Name</h4>
+                        <p class="text-[10px] text-muted-foreground font-medium uppercase">@product.Category?.Name</p>
+                    </div>
+
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <p class="text-sm font-bold text-primary">UGX @product.SalePrice.ToString("N0")</p>
+                            <p class="text-[9px] text-muted-foreground">Qty: @product.StockQuantity @product.Unit</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-[9px] text-muted-foreground">Batch: @(product.BatchNumber ?? "Primary")</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button @onclick="() => ShareToWhatsApp(product)" class="p-2 bg-muted hover:bg-success/10 text-muted-foreground hover:text-success rounded-lg transition-colors flex-1 flex justify-center" title="Share">
+                            <Icon Name="share" Width="14" Height="14" />
+                        </button>
+                        <button @onclick="() => EditProduct(product)" class="p-2 bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors flex-1 flex justify-center" title="Edit">
+                            <Icon Name="pencil" Width="14" Height="14" />
+                        </button>
+                        <button @onclick="() => DeleteProduct(product.Id)" class="p-2 bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors flex-1 flex justify-center" title="Delete">
+                            <Icon Name="trash-2" Width="14" Height="14" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Refined ERP-Style Dialog (Max-w-2xl) -->
+@if (_showModal)
+{
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <!-- Main Dialog Container -->
+        <div class="bg-card border border-border shadow-2xl w-full max-w-2xl mx-auto rounded-xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            
+            <!-- Modal Header -->
+            <div class="px-8 py-5 border-b border-border flex justify-between items-center bg-muted/5 shrink-0">
+                <div class="flex items-center gap-3">
+                    <Icon Name="@(_editingId == 0 ? "plus-circle" : "pencil")" Width="20" Height="20" class="text-primary" />
+                    <h3 class="text-base font-bold text-foreground">@(_editingId == 0 ? "Add New Product" : "Edit Product")</h3>
+                </div>
+                <button @onclick="CloseModal" class="h-8 w-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors">
+                    <Icon Name="x" Width="18" Height="18" />
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-8 overflow-y-auto custom-scrollbar">
+                <div class="space-y-8">
+                    
+                    <!-- Identity Section (2-Column) -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <Icon Name="package" Width="16" Height="16" class="text-muted-foreground" />
+                            <h4 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Product Identity</h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2 flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Product Name *</label>
+                                <input type="text" @bind="_product.Name" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" placeholder="Enter full name" />
+                            </div>
+                            <div class="md:col-span-2 flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Description</label>
+                                <textarea @bind="_product.Description" class="bg-card border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px] resize-none" placeholder="Brief therapeutic description"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logistics Grid (2-Column) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground">Category</label>
+                            <select @bind="_product.CategoryId" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+                                @foreach (var cat in _categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground">Base Unit</label>
+                            <select @bind="_product.Unit" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+                                <option value="Pack">Pack</option>
+                                <option value="Strip">Strip</option>
+                                <option value="Box">Box</option>
+                                <option value="Bottle">Bottle</option>
+                                <option value="Tablet">Tablet</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Pricing & Stock Section (4-Column Grid) -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <Icon Name="banknote" Width="16" Height="16" class="text-muted-foreground" />
+                            <h4 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Financial Intelligence</h4>
+                        </div>
+                        <div class="bg-muted/30 border border-border rounded-xl p-6 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold text-muted-foreground uppercase">Buying Price</label>
+                                    <input type="number" @bind="_product.PurchasePrice" class="h-10 w-full bg-card border border-input rounded-lg px-2 text-sm text-center font-bold" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold text-primary uppercase">Retail Price *</label>
+                                    <input type="number" @bind="_product.SalePrice" class="h-10 w-full bg-card border border-primary/30 rounded-lg px-2 text-sm text-center font-bold text-primary" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold text-muted-foreground uppercase">Wholesale</label>
+                                    <input type="number" @bind="_product.WholesalePrice" class="h-10 w-full bg-card border border-input rounded-lg px-2 text-sm text-center font-bold" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold text-muted-foreground uppercase">Stock Qty</label>
+                                    <input type="number" @bind="_product.StockQuantity" class="h-10 w-full bg-card border border-input rounded-lg px-2 text-sm text-center font-bold" />
+                                </div>
+                            </div>
+
+                            <!-- Real-time Logic Visualizer -->
+                            <div class="flex gap-4 items-center pt-2 border-t border-border/50">
+                                <div class="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg text-orange-600 font-bold text-[11px]">
+                                    <Icon Name="zap" Width="14" Height="14" />
+                                    <span>Margin: UGX @((_product.SalePrice - _product.PurchasePrice).ToString("N0"))</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-lg text-blue-600 font-bold text-[11px]">
+                                    <Icon Name="trending-up" Width="14" Height="14" />
+                                    <span>Markup: @((_product.PurchasePrice == 0 ? 0 : (_product.SalePrice - _product.PurchasePrice) / _product.PurchasePrice * 100).ToString("N1"))%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unit Breakdown Section -->
+                    <div class="space-y-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground">Unit Breakdown Mapping</label>
+                            <input type="text" @bind="_product.UnitDescription" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. 1 Pack = 3 Strips = 30 Tablets" />
+                            <p class="text-[10px] text-muted-foreground ml-1">Example Format: 1 Pack = 10 Strips = 100 Tablets</p>
+                        </div>
+
+                        @{
+                            var breakdown = ParseUnitBreakdown(_product.UnitDescription);
+                            if (breakdown.Any())
+                            {
+                                <div class="bg-muted/50 border border-border rounded-xl p-5 space-y-4">
+                                    <h5 class="text-[10px] font-bold text-muted-foreground uppercase">Fractional Pricing Strategy</h5>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        @foreach (var bu in breakdown)
+                                        {
+                                            <div class="flex flex-col gap-1.5 p-3 bg-card border border-border rounded-lg">
+                                                <label class="text-[10px] font-bold text-muted-foreground uppercase">Price Per @bu.name</label>
+                                                @{
+                                                    var prices = GetUnitPrices(_product.UnitPricesJson);
+                                                    decimal currentPrice = prices.ContainsKey(bu.name) ? prices[bu.name] : 0;
+                                                    decimal autoPrice = _product.SalePrice > 0 ? Math.Round(_product.SalePrice / bu.perFullUnit) : 0;
+                                                }
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground/50">UGX</span>
+                                                    <input type="number" value="@(currentPrice == 0 ? "" : currentPrice.ToString())" 
+                                                           @onchange="@(e => UpdateUnitPrice(bu.name, e.Value?.ToString()))"
+                                                           class="h-9 w-full border-b border-border bg-transparent pl-10 pr-2 text-xs font-bold focus:border-primary outline-none" 
+                                                           placeholder="@autoPrice.ToString("N0")" />
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Compliance Section (2-Column Grid) -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <Icon Name="shield-check" Width="16" Height="16" class="text-muted-foreground" />
+                            <h4 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Clinical & Compliance</h4>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Product Code</label>
+                                <input type="text" @bind="_product.ProductCode" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm font-mono" placeholder="SKU-001" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Batch Number</label>
+                                <input type="text" @bind="_product.BatchNumber" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm font-mono" placeholder="B-2024-X" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Expiry Date</label>
+                                <input type="date" @bind="_product.ExpiryDate" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm font-medium" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-medium text-foreground">Prescription Info</label>
+                                <input type="text" @bind="_product.PrescriptionInfo" class="h-10 bg-card border border-input rounded-lg px-3 py-2 text-sm" placeholder="Dosage / Usage" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Media Section -->
+                    <div class="space-y-3">
+                        <label class="text-sm font-medium text-foreground">Product Visualization</label>
+                        <div class="group relative h-32 w-full rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/50 cursor-pointer bg-muted/10 transition-all">
+                            @if(!string.IsNullOrEmpty(_product.ImagePath))
+                            {
+                                <img src="@_product.ImagePath" class="h-full w-auto object-contain p-2" />
+                            }
+                            else
+                            {
+                                <Icon Name="image" Width="24" Height="24" class="text-muted-foreground/30" />
+                                <span class="text-[10px] font-bold text-muted-foreground uppercase">Upload Image Record</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Operational Toggles -->
+                    <div class="flex items-center gap-8 pt-4 border-t border-border">
+                        <label class="flex items-center gap-2.5 cursor-pointer group">
+                            <div class="relative h-5 w-5 border border-input rounded bg-card flex items-center justify-center group-hover:border-primary transition-all">
+                                @if(_product.RequiresPrescription) { <div class="h-2.5 w-2.5 bg-primary rounded-sm"></div> }
+                                <input type="checkbox" @bind="_product.RequiresPrescription" class="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
+                            <span class="text-xs font-bold text-muted-foreground group-hover:text-foreground">Requires Prescription</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer group">
+                            <div class="relative h-5 w-5 border border-input rounded bg-card flex items-center justify-center group-hover:border-primary transition-all">
+                                @if(_product.IsActive) { <div class="h-2.5 w-2.5 bg-success rounded-sm"></div> }
+                                <input type="checkbox" @bind="_product.IsActive" class="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
+                            <span class="text-xs font-bold text-muted-foreground group-hover:text-foreground">Active Asset</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-8 py-5 bg-muted/5 border-t border-border flex justify-end gap-3 shrink-0">
+                <button @onclick="CloseModal" class="px-6 py-2.5 border border-border rounded-lg text-xs font-bold hover:bg-muted transition-all uppercase tracking-wider">Discard</button>
+                <button @onclick="SaveProduct" class="bg-primary text-primary-foreground px-8 py-2.5 rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 uppercase tracking-wider">
+                    <Icon Name="save" Width="14" Height="14" /> Commit Record
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(0,0,0,0.2);
+    }
+</style>
+
+@code {
+    private List<Product> _products = new();
+    private List<Category> _categories = new();
+    private DashboardStats _stats = new();
+    private string _searchTerm = "";
+    private int _selectedCategoryId = 0;
+    private bool _showModal = false;
+    private Product _product = new();
+    private int _editingId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        ShortcutService.OnShortcut += HandleShortcut;
+    }
+
+    private void HandleShortcut(string action)
+    {
+        InvokeAsync(async () => {
+            if (action == "new" && !_showModal) ShowAddModal();
+            if (action == "save" && _showModal) await SaveProduct();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ShortcutService.OnShortcut -= HandleShortcut;
+    }
+
+    private async Task LoadData()
+    {
+        _products = await PharmacyService.GetProductsAsync();
+        _categories = await PharmacyService.GetCategoriesAsync();
+        _stats = await PharmacyService.GetDashboardStatsAsync();
+    }
+
+    private IEnumerable<Product> FilteredProducts => _products
+        .Where(p => (string.IsNullOrWhiteSpace(_searchTerm) || 
+                    p.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (p.ProductCode?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Barcode?.Contains(_searchTerm) ?? false)) &&
+                   (_selectedCategoryId == 0 || p.CategoryId == _selectedCategoryId));
+
+    private void ShowAddModal()
+    {
+        _editingId = 0;
+        _product = new Product { CategoryId = _categories.FirstOrDefault()?.Id ?? 0, Unit = "Pack", IsActive = true, ExpiryDate = DateTime.Today.AddYears(1) };
+        _showModal = true;
+    }
+
+    private void EditProduct(Product product)
+    {
+        _editingId = product.Id;
+        _product = product;
+        _showModal = true;
+    }
+
+    private void CloseModal() => _showModal = false;
+
+    private async Task SaveProduct()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_product.Name)) return;
+            await PharmacyService.SaveProductAsync(_product);
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private async Task DeleteProduct(int id)
+    {
+        await PharmacyService.DeleteProductAsync(id);
+        await LoadData();
+    }
+
+    private List<(string name, int perFullUnit)> ParseUnitBreakdown(string? unitDescription)
+    {
+        if (string.IsNullOrWhiteSpace(unitDescription)) return new();
+        var segments = unitDescription.Split('=').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+        if (segments.Count <= 1) return new();
+        var results = new List<(string name, int perFullUnit)>();
+        for (int i = 1; i < segments.Count; i++)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(segments[i], @"^(\d+)\s*(.+)$");
+            if (match.Success)
+            {
+                var count = int.Parse(match.Groups[1].Value);
+                var name = match.Groups[2].Value.Trim().TrimEnd('s');
+                if (count > 0) results.Add((name, count));
+            }
+        }
+        return results;
+    }
+
+    private Dictionary<string, decimal> GetUnitPrices(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return new();
+        try { return JsonSerializer.Deserialize<Dictionary<string, decimal>>(json) ?? new(); }
+        catch { return new(); }
+    }
+
+    private void UpdateUnitPrice(string unitName, string? value)
+    {
+        var dict = GetUnitPrices(_product.UnitPricesJson);
+        if (decimal.TryParse(value, out decimal price))
+        {
+            dict[unitName] = price;
+        }
+        else
+        {
+            dict.Remove(unitName);
+        }
+        _product.UnitPricesJson = JsonSerializer.Serialize(dict);
+    }
+
+    private async Task ShareToWhatsApp(Product p)
+    {
+        var msg = $"*Inventory Detail: {p.Name}*\n" +
+                  $"Category: {p.Category?.Name}\n" +
+                  $"Unit: {p.Unit}\n" +
+                  $"Price: UGX {p.SalePrice.ToString("N0")}\n" +
+                  $"Stock: {p.StockQuantity} {p.Unit}\n" +
+                  $"Batch: {p.BatchNumber ?? "Primary"}\n" +
+                  $"Expiry: {p.ExpiryDate?.ToString("dd MMM yyyy") ?? "N/A"}\n\n" +
+                  $"_Auto-generated from FastPharma ERP_";
+        
+        var url = $"https://api.whatsapp.com/send?text={Uri.EscapeDataString(msg)}";
+        await JS.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private RenderFragment? ExpiryBadge(DateTime? expiryDate)
+    {
+        if (!expiryDate.HasValue) return null;
+        var days = (expiryDate.Value - DateTime.Today).Days;
+        
+        string colorClass = days < 30 ? "bg-destructive text-destructive-foreground" : 
+                           (days < 90 ? "bg-warning text-warning-foreground" : 
+                           "bg-success text-success-foreground");
+
+        return __builder => {
+            <span class="px-2 py-0.5 @colorClass rounded text-[9px] font-bold uppercase tracking-wider">
+                @if(days < 0) { <span>Expired</span> }
+                else { <span>@(days)d</span> }
+            </span>
+        };
+    }
+}

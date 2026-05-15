@@ -1,0 +1,193 @@
+@using FirstPharmar.Services
+@using FirstPharmar.Models
+@using Lucide.Blazor
+@inject IPharmacyService PharmacyService
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-10rem)]">
+    <!-- Left: Product Selection -->
+    <div class="lg:col-span-8 flex flex-col gap-6 h-full min-h-0">
+        <div class="bg-card border border-border rounded-xl p-3 shadow-sm shrink-0">
+            <div class="relative group">
+                <Icon Name="search" Width="18" Height="18" StrokeWidth="2.5" class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input type="text" placeholder="Search by name, category or barcode..." @bind="_searchTerm" @bind:event="oninput"
+                       class="w-full bg-muted/30 border border-border rounded-lg pl-12 pr-4 py-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-background outline-none transition-all" />
+            </div>
+        </div>
+
+        <div class="flex-1 bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col min-h-0">
+            <div class="p-3 bg-muted/20 border-b border-border flex gap-2 overflow-x-auto shrink-0 scrollbar-hide">
+                <button class="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-widest shadow-sm">All Stock</button>
+                @foreach (var cat in _categories)
+                {
+                    <button class="px-4 py-1.5 bg-background text-muted-foreground border border-border rounded-lg text-xs font-bold uppercase tracking-widest hover:border-primary/50 hover:text-primary transition-all">@cat.Name</button>
+                }
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 custom-scrollbar">
+                @foreach (var product in FilteredProducts)
+                {
+                    <button @onclick="() => AddToCart(product)" 
+                            class="group p-4 bg-background border border-border rounded-xl hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all text-left flex flex-col justify-between h-44 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="h-6 w-6 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+                                <Icon Name="plus" Width="14" Height="14" StrokeWidth="3" />
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] font-bold text-primary mb-1 uppercase tracking-[0.2em] opacity-70">@product.Category?.Name</div>
+                            <div class="font-bold text-foreground line-clamp-2 leading-tight">@product.Name</div>
+                            <div class="text-[10px] text-muted-foreground mt-1">Stock: <span class='@(product.StockQuantity < 10 ? "text-destructive font-bold" : "font-medium")'>@product.StockQuantity</span></div>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div class="font-black text-base text-foreground">UGX @product.SalePrice.ToString("N0")</div>
+                        </div>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Cart & Checkout -->
+    <div class="lg:col-span-4 h-full min-h-0">
+        <div class="bg-card border border-border rounded-xl shadow-lg h-full flex flex-col overflow-hidden relative">
+            <div class="p-5 border-b border-border flex items-center justify-between bg-muted/10 shrink-0">
+                <h3 class="text-sm font-bold text-foreground flex items-center gap-2 uppercase tracking-widest">
+                    <Icon Name="shopping-cart" Width="18" Height="18" StrokeWidth="2.5" class="text-primary" /> Active Cart
+                </h3>
+                <span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">@_cart.Sum(i => i.Quantity) ITEMS</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+                @if (!_cart.Any())
+                {
+                    <div class="h-full flex flex-col items-center justify-center text-muted-foreground text-center space-y-4 opacity-30">
+                        <Icon Name="shopping-bag" Width="64" Height="64" StrokeWidth="1.5" />
+                        <p class="text-xs font-bold uppercase tracking-widest">Waiting for selection</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in _cart)
+                    {
+                        <div class="bg-muted/30 border border-border rounded-xl p-3 flex justify-between items-center group animate-fade-in relative">
+                            <div class="flex-1 overflow-hidden pr-2">
+                                <div class="text-xs font-bold text-foreground truncate">@item.Product?.Name</div>
+                                <div class="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">UGX @item.UnitPrice.ToString("N0") × @item.Quantity</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-primary">UGX @item.Subtotal.ToString("N0")</span>
+                                <button @onclick="() => RemoveFromCart(item)" class="text-destructive hover:scale-110 transition-transform">
+                                    <Icon Name="x-circle" Width="16" Height="16" StrokeWidth="2.5" />
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="p-5 bg-muted/20 border-t border-border space-y-3 shrink-0">
+                <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span class="text-foreground">UGX @_cart.Sum(i => i.Subtotal).ToString("N0")</span>
+                </div>
+                <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <span>Discount</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-muted-foreground">UGX</span>
+                        <input type="number" @bind="_discount" class="bg-background border border-border rounded px-2 py-1 w-20 text-right text-foreground focus:border-primary outline-none" />
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-border/50 flex justify-between items-end">
+                    <span class="text-xs font-black uppercase tracking-[0.2em] text-foreground">Total</span>
+                    <span class="text-2xl font-black text-primary">UGX @Total.ToString("N0")</span>
+                </div>
+
+                <div class="pt-4 space-y-3">
+                    <div>
+                        <label class="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Customer Name (Required for Credit)</label>
+                        <input @bind="_customerName" class="input-field py-2 text-xs" placeholder="Full name..." />
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Payment Channel</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button @onclick='() => _paymentMethod = "Cash"' class='py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter border @(_paymentMethod == "Cash" ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground")'>Cash</button>
+                            <button @onclick='() => _paymentMethod = "Mobile Money"' class='py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter border @(_paymentMethod == "Mobile Money" ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground")'>M-Money</button>
+                            <button @onclick='() => _paymentMethod = "Credit"' class='py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter border @(_paymentMethod == "Credit" ? "bg-destructive/10 border-destructive text-destructive" : "border-border text-muted-foreground")'>Credit</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button @onclick="Checkout" disabled="@(!_cart.Any() || (_paymentMethod == "Credit" && string.IsNullOrEmpty(_customerName)))"
+                        class="w-full gradient-primary hover:opacity-90 disabled:bg-muted disabled:opacity-50 text-white font-black py-4 rounded-xl text-sm uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all mt-4 active:scale-95 flex items-center justify-center gap-3">
+                    <Icon Name="credit-card" Width="18" Height="18" StrokeWidth="2" /> @(_paymentMethod == "Credit" ? "COMMIT CREDIT SALE" : "PROCESS SALE")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Product> _products = new();
+    private List<Category> _categories = new();
+    private string _searchTerm = "";
+    private List<SaleItem> _cart = new();
+    private decimal _discount = 0;
+    private string _paymentMethod = "Cash";
+    private string _customerName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await PharmacyService.GetProductsAsync();
+        _categories = await PharmacyService.GetCategoriesAsync();
+    }
+
+    private IEnumerable<Product> FilteredProducts => _products
+        .Where(p => string.IsNullOrWhiteSpace(_searchTerm) || 
+                   p.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private void AddToCart(Product product)
+    {
+        var existing = _cart.FirstOrDefault(i => i.ProductId == product.Id);
+        if (existing != null)
+        {
+            existing.Quantity++;
+        }
+        else
+        {
+            _cart.Add(new SaleItem { 
+                ProductId = product.Id, 
+                Product = product, 
+                Quantity = 1, 
+                UnitPrice = product.SalePrice 
+            });
+        }
+    }
+
+    private void RemoveFromCart(SaleItem item) => _cart.Remove(item);
+
+    private decimal Total => _cart.Sum(i => i.Subtotal) - _discount;
+
+    private async Task Checkout()
+    {
+        var sale = new Sale {
+            SaleDate = DateTime.Now,
+            TotalAmount = Total,
+            Discount = _discount,
+            PaymentMethod = _paymentMethod,
+            CustomerName = _customerName,
+            Items = _cart.Select(i => new SaleItem {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
+        };
+
+        await PharmacyService.ProcessSaleAsync(sale);
+        _cart.Clear();
+        _discount = 0;
+        _customerName = "";
+        _paymentMethod = "Cash";
+        // Refresh products in case of stock change
+        _products = await PharmacyService.GetProductsAsync();
+    }
+}
